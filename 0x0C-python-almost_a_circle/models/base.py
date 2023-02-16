@@ -1,21 +1,25 @@
 #!/usr/bin/python3
-'''
-    Creating the base class of all other classes for this project.
-'''
+"""Module base"""
 import json
 import csv
+from collections import OrderedDict
+import turtle
 
 
 class Base:
-    '''
-        This class will manage the id attribute for all the classes.
-        Arguments:
-            @id: The id for a specific instance.
-    '''
-
+    """Defines a base class"""
     __nb_objects = 0
 
     def __init__(self, id=None):
+        """Method that assign the public instance attribute id
+
+        Args:
+           id(int): integer value to manage id in this project
+
+        Return:
+           Always nothing.
+
+        """
         if id is not None:
             self.id = id
         else:
@@ -24,157 +28,201 @@ class Base:
 
     @staticmethod
     def to_json_string(list_dictionaries):
-        '''
-            Converting a dict into a json string
-        '''
-        if list_dictionaries is None:
-            return '[]'
-        return json.dumps(list_dictionaries)
+        """Method that returns the JSON
+           string representation
 
-    @staticmethod
-    def from_json_string(json_string):
-        '''
-            Returns a dict from a string
-        '''
-        if json_string is None or len(json_string) == 0:
-            return []
-        return json.loads(json_string)
+        Args:
+           list_dictionaries(dict): List of dictionaries
+
+        Return:
+           JSON string
+        """
+        if list_dictionaries is None or bool(list_dictionaries) is False:
+            return "[]"
+        else:
+            json_string = json.dumps(list_dictionaries)
+            return json_string
 
     @classmethod
     def save_to_file(cls, list_objs):
-        '''
-            Writes the string representation of an object of a class
-            into a file
-        '''
-        file_name = cls.__name__ + ".json"
+        """ Method that writes the JSON string representation
+            of list_objs to a file
 
-        content = []
+        Args:
+            list_objs(list): List of objects
+
+        Return:
+            Always nothing
+        """
+        filename = "{}.json".format(cls.__name__)
+        list_dictionaries = []
         if list_objs is not None:
-            for item in list_objs:
-                item = item.to_dictionary()
-                json_dict = json.loads(cls.to_json_string(item))
-                content.append(json_dict)
+            for obj in list_objs:
+                dictionary = obj.to_dictionary()
+                list_dictionaries.append(dictionary)
+            json_string = Base.to_json_string(list_dictionaries)
+        with open(filename, 'w') as f:
+            if list_objs is None:
+                f.write("[]")
+            else:
+                f.write(json_string)
 
-        with open(file_name, mode="w") as fd:
-            json.dump(content, fd)
+    @staticmethod
+    def from_json_string(json_string):
+        """Method that returns the list of the
+           JSON string representation
+
+        Args:
+           json_string: JSON string
+
+        Return:
+           Python object
+
+        """
+        if json_string is None or bool(json_string) is False:
+            json_string = "[]"
+        return json.loads(json_string)
 
     @classmethod
     def create(cls, **dictionary):
-        '''
-            Returns an instance with all the attributes already set
-        '''
-        from models.rectangle import Rectangle
-        from models.square import Square
+        """Update the class Base and returns a instance with all
+           attributes already set
 
+        Args:
+           dictionary: Dictionary with all attributes of the object
+
+        Return:
+           A instance with all attributes already set
+
+        """
         if cls.__name__ == "Rectangle":
-            r2 = Rectangle(3, 8)
+            dummy = cls(1, 1)
         elif cls.__name__ == "Square":
-            r2 = Square(5)
-        r2.update(**dictionary)
-        return (r2)
+            dummy = cls(1)
+        dummy.update(**dictionary)
+        return dummy
 
     @classmethod
     def load_from_file(cls):
-        '''
-            loading dict representing the parameters for
-            and instance and from that creating instances
-        '''
-        file_name = cls.__name__ + ".json"
-
+        """Method that returns a list of instances
+           - the type of these instances depends on cls
+        """
+        filename = "{}.json".format(cls.__name__)
+        instance_list = []
         try:
-            with open(file_name, encoding="UTF8") as fd:
-                content = cls.from_json_string(fd.read())
-        except:
-            return []
-
-        instances = []
-
-        for instance in content:
-            tmp = cls.create(**instance)
-            instances.append(tmp)
-
-        return instances
-
-    @staticmethod
-    def draw(list_rectangles, list_squares):
-        '''
-            Opens a window and draws all the squares and rectangles
-        '''
-        import turtle
-
-        turtle.penup()
-        turtle.pensize(10)
-        turtle.bgcolor("black")
-        turtle.color("teal")
-        turtle.hideturtle()
-        turtle.goto(-300, 300)
-        turtle.speed(0)
-
-        for instance in list_rectangles:
-            turtle.pendown()
-            for i in range(2):
-                turtle.forward(instance.width)
-                turtle.right(90)
-                turtle.forward(instance.height)
-                turtle.right(90)
-            turtle.penup()
-            if instance.width < 100:
-                move_by = 200
-            else:
-                move_by = instance.width + 30
-            x_cordinate = round(turtle.xcor(), 5)
-            turtle.goto(x_cordinate + move_by, 300)
-
-        turtle.goto(-300, 100)
-        for instance in list_squares:
-            turtle.pendown()
-            for i in range(2):
-                turtle.forward(instance.width)
-                turtle.right(90)
-                turtle.forward(instance.height)
-                turtle.right(90)
-            turtle.penup()
-            if instance.width < 100:
-                move_by = 100
-            else:
-                move_by = instance.width + 30
-            x_cordinate = round(turtle.xcor(), 5)
-            turtle.goto(x_cordinate + move_by, 100)
-
-        turtle.exitonclick()
+            with open(filename, 'r') as f:
+                json_string = f.read()
+                dictionary_list = cls.from_json_string(json_string)
+                for item in dictionary_list:
+                    instance = cls.create(**item)
+                    instance_list.append(instance)
+        except FileNotFoundError:
+            return instance_list
+        return instance_list
 
     @classmethod
     def save_to_file_csv(cls, list_objs):
-        '''
-            this is my method
-        '''
-        file_name = cls.__name__ + ".csv"
+        """Method that serializes in CSV
 
-        with open(file_name, mode="w", newline='', encoding="UTF8") as fd:
-            write_this = csv.writer(fd, delimiter=" ")
+        Args:
+           list_objs(list): List of objects
 
-            if cls.__name__ == "Rectangle":
-                for item in list_objs:
-                    string = ""
-                    item = item.to_dictionary()
-                    string += (str(item["id"]) + "," +
-                               str(item["width"]) + "," +
-                               str(item["height"]) + "," +
-                               str(item["x"]) + "," + str(item["y"]))
-                    write_this.writerow(string)
-
-            if cls.__name__ == "Square":
-                for item in list_objs:
-                    string = ""
-                    item = item.to_dictionary()
-                    string += (str(item["id"]) + "," +
-                               str(item["size"]) + "," +
-                               str(item["x"]) + "," + str(item["y"]))
-                    write_this.writerow(string)
+        Return:
+           Always nothing
+        """
+        filename = "{}.csv".format(cls.__name__)
+        data = []
+        if list_objs is not None:
+            for obj in list_objs:
+                dictionary = obj.to_dictionary()
+                data.append(dictionary)
+        rectangle_header = ['id', 'width', 'height', 'x', 'y']
+        square_header = ['id', 'size', 'x', 'y']
+        with open(filename, mode='w') as f:
+            if list_objs is None:
+                f.write("[]")
+            else:
+                if cls.__name__ == 'Rectangle':
+                    result = csv.DictWriter(f, fieldnames=rectangle_header)
+                elif cls.__name__ == 'Square':
+                    result = csv.DictWriter(f, fieldnames=square_header)
+                result.writeheader()
+                result.writerows(data)
 
     @classmethod
     def load_from_file_csv(cls):
-        '''
-            this is my method
-        '''
-        return ([])
+        """Method that deserializes in CSV
+        """
+        filename = "{}.csv".format(cls.__name__)
+        instance_list = []
+        try:
+            with open(filename) as f:
+                result = csv.DictReader(f)
+                for row in result:
+                    row = dict(row)
+                    for key in row:
+                        row[key] = int(row[key])
+                    instance = cls.create(**row)
+                    instance_list.append(instance)
+        except FileNotFoundError:
+            return instance_list
+        return instance_list
+
+    @staticmethod
+    def draw(list_rectangles, list_squares):
+        """Method that draws the shape with turtle module
+
+        Args:
+           list_squares(list): List of square objects
+           list_rectangles(list): List of rectangle objects
+
+        Return:
+           Always nothing
+        """
+        # Open screen and set the turtle in the center
+        s = turtle.getscreen()
+        t = turtle.Turtle()
+
+        # Add a title to my screen
+        turtle.title("My first draw with python and tutle module")
+
+        # Customize turtle and screen background
+        t.shape("turtle")
+        turtle.bgcolor("black")
+
+        # Customize pen for rectangle
+        t.pen(pencolor="blue", fillcolor="white", pensize=5, speed=1)
+        # Extract the data from the instance rectangle list
+        for instance in list_rectangles:
+            # Customize pen for rectangle
+            t.pen(pencolor="blue", fillcolor="white", pensize=5, speed=1)
+            data = instance.to_dictionary()
+            # Set the position acording the rectangle object
+            t.home()
+            t.setpos(data['x'], data['y'])
+            # Draw process
+            t.pd()
+            for i in range(2):
+                t.forward(data['width'])
+                t.left(90)
+                t.forward(data['height'])
+                t.left(90)
+            t.pu()
+
+        # Customize pen for square
+        t.pen(pencolor="red", fillcolor="white", pensize=5, speed=0.5)
+        # Extract the data from the instance square list
+        for instance in list_squares:
+            data = instance.to_dictionary()
+            # Set the position acording the square object
+            t.home()
+            t.setpos(data['x'], data['y'])
+            # Draw process
+            t.pd()
+            for i in range(4):
+                t.forward(data['size'])
+                t.left(90)
+            t.pu()
+
+        # Keeps window open
+        turtle.getscreen()._root.mainloop()
